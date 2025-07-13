@@ -1,34 +1,48 @@
-
 public abstract class GameModes {
 	SerialPortHandle sp;
 	int score = 0;
 	int misses = 0;
 	Player player;
-	String gameMode = "";
-
+	String gameMode;
 	
-
-	
-	GameModes(SerialPortHandle sp, Player player, String gameMod) {
+	GameModes(SerialPortHandle sp, Player player, String gameMode) {
 		this.sp = sp;
 		this.player = player;
 		this.gameMode = gameMode;
 	}
+	// Core of the template design pattern
 	final void play() {
+		getReady();
 		countdown();
-		applyAccelerationBonus();
 		calculateScore();
-		
+		endRound();
 	}
-	void countdown() { // Ai-assisted
-		long startTime = System.currentTimeMillis();
-        while ((System.currentTimeMillis() - startTime) < 30000 && misses < 3) {
-            runGameLogic();
-        }
 
+
+
+
+	//Signals start of game
+	void getReady()
+	{
+	    System.out.println("GET READY");
+	    sp.printLine("FLASH");
+	    try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
+	// game runs for 30 secs or if the player has made 3 mistakes
+	void countdown() {
+		long startTime = System.currentTimeMillis();
+		while ((System.currentTimeMillis() - startTime) < 30000 && misses < 3) {
+			runGameLogic();
+		}
+	}
+	//used for calculating score and updating leaderboard
 	void calculateScore() {
-		player.score = score; 
+		player.score = score;
 		System.out.println("Final Score : " + score);
 		if(gameMode.equals("SpeedTest")) {
 			LeaderBoard ranking = new LeaderBoard("SpeedTest.txt");
@@ -40,31 +54,19 @@ public abstract class GameModes {
 			ranking.UpdateRanking(player);
 			ranking.configRanking();
 		}
-
-		
-	
 	}
-	void applyAccelerationBonus() {
-	    int accelBonus = getAcceleration();
-	    score = score + accelBonus;
-	    System.out.println("Accelerometer bonus applied: " + accelBonus);
+	//end the game	
+	void endRound() {
+		System.out.println("TIME IS UP");
+		sp.printLine("FLASH");
+	    try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    sp.printLine("LED:OFF");
 	}
-
-	int getAcceleration() {
-		sp.printLine("READ_ACCEL"); // Signal Arduino
-        String Data = sp.readLine();
-        String[] xyzaccel = Data.split(",");
-        int xaxis =  Integer.parseInt(xyzaccel[0]);
-        int yaxis = Integer.parseInt(xyzaccel[1]);
-        int zaxis = Integer.parseInt(xyzaccel[2]);
-        int accelscore = xaxis + yaxis + zaxis;
-        if (accelscore > 1800) return 200;
-        else if (accelscore > 1600) return 100;
-        return 0;
-
-        		
-
-	}
+	// needs to implemented in children
 	abstract void runGameLogic();
-   
 }
